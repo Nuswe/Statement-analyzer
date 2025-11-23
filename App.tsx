@@ -7,7 +7,7 @@ import { AuthModal } from './components/AuthModal';
 import { analyzeStatement } from './services/geminiService';
 import { authService } from './services/authService';
 import { AnalysisResult, AppState, HistoryItem, User } from './types';
-import { AlertTriangle, FileSearch, BrainCircuit, TrendingUp, Globe, Clock, Trash2, History, ChevronRight, Lock, Loader2, ArrowLeft } from 'lucide-react';
+import { AlertTriangle, FileSearch, BrainCircuit, TrendingUp, Globe, Clock, Trash2, History, ChevronRight, Lock, Loader2, ArrowLeft, Mail, Facebook, Instagram, MessageCircle } from 'lucide-react';
 
 const App: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -424,13 +424,31 @@ const App: React.FC = () => {
       />
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 sm:py-8 mt-auto">
-        <div className="max-w-5xl mx-auto px-4 text-center text-slate-500 dark:text-slate-400 text-sm">
-          <p>&copy; {new Date().getFullYear()} MalawiBank Analyzer. Private & Secure.</p>
-          <p className="mt-2 text-xs">
-            Disclaimer: This tool uses AI for estimation. Always verify figures with your official bank documents. 
-            Not financial advice.
-          </p>
+      <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-8 mt-auto transition-colors duration-300">
+        <div className="max-w-5xl mx-auto px-4 text-center">
+            
+            <div className="mb-6 flex justify-center space-x-6">
+                <a href="mailto:alinuswekayuni@gmail.com" className="p-2 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all" aria-label="Email">
+                    <Mail className="w-5 h-5" />
+                </a>
+                <a href="https://wa.me/265884741586" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all" aria-label="WhatsApp">
+                    <MessageCircle className="w-5 h-5" />
+                </a>
+                <a href="https://www.facebook.com/search/top?q=Alinuswe%20Kayuni" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all" aria-label="Facebook">
+                    <Facebook className="w-5 h-5" />
+                </a>
+                <a href="https://instagram.com/Kaynomatic" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-all" aria-label="Instagram">
+                    <Instagram className="w-5 h-5" />
+                </a>
+            </div>
+
+            <p className="text-slate-600 dark:text-slate-300 text-sm font-medium mb-1">&copy; {new Date().getFullYear()} MalawiBank Analyzer.</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Built by Alinuswe Kayuni</p>
+            
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 max-w-lg mx-auto">
+                Disclaimer: This tool uses AI for estimation. Always verify figures with your official bank documents. 
+                Not financial advice.
+            </p>
         </div>
       </footer>
     </div>

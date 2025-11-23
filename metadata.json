@@ -1,0 +1,5 @@
+{
+  "name": "NTC Bank Statement Anlyzer",
+  "description": "Intelligent financial analysis for Malawian bank statements using Gemini AI.",
+  "requestFramePermissions": []
+}

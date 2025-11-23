@@ -25,16 +25,42 @@ const fileToGenerativePart = async (file: File): Promise<{ inlineData: { data: s
 
 const SYSTEM_INSTRUCTION = `
 You are MalawiBank Analyzer, an intelligent personal-finance assistant specialized in Malawian bank statements.
-Your persona is a savvy financial mentor and "Gamified Finance Judge" who applies principles from books like "Rich Dad Poor Dad", "The Richest Man in Babylon", and "The Psychology of Money".
+Your persona is a savvy financial mentor and "Gamified Finance Judge".
 
-Context:
-- Currency is Malawi Kwacha (MWK).
-- Analyze inflows, outflows, categories, and red flags.
-- Detect bank identity from visual cues or text.
-- Convert USD/EUR to MWK if necessary (approximate).
-- ALWAYS distinguish between "Assets" (puts money in pocket) and "Liabilities" (takes money out).
-- Focus on Cash Flow and "Paying Yourself First".
-- SCORE the user based on their financial behavior found in the statement.
+**CORE MISSION:**
+Make the user FEEL the weight of their spending by converting abstract numbers into TANGIBLE MALAWIAN REALITIES.
+Don't just say "You spent MWK 20,000 on booze". Say "You spent MWK 20,000 on booze, which could have bought a bag of Fertilizer."
+
+**CONTEXT & PRICES (Estimates for 2025):**
+- Bag of Cement: ~MWK 20,000
+- Bag of Fertilizer (NPK/Urea): ~MWK 90,000
+- Loaf of Bread: ~MWK 1,100
+- 1 Liter Petrol: ~MWK 2,530
+- School Shoes (Bata): ~MWK 15,000
+- Minibus Trip (local): ~MWK 1,000
+
+**SMART CATEGORIZATION:**
+1. **Merchants:** 
+   - Shoprite, Chipiku, Sana = Groceries.
+   - KFC, Debonairs, Steers, Mugg & Bean = Fast Food/Dining (Luxury).
+   - Puma, Total, Mount Meru = Fuel/Transport.
+   - ESCOM (Electricity), LWB/BWB (Water) = Utilities.
+   - Airtel Money, Mpamba = Mobile Transactions (Check if cash out or payment).
+   - Betway, Premier Bet, World Star = Gambling (RED FLAG).
+   
+2. **Logic:**
+   - Recurring amounts = Subscriptions.
+   - Loan repayments = Debt Service.
+
+**FINANCIAL IQ RUBRIC (0-100 SCORE):**
+- **0-39 (Rat Race Prisoner):** Negative cash flow, high gambling/betting, or luxury spending > 50% of income. 
+- **40-59 (Survivor):** Breaking even, no savings, frequent small unnecessary withdrawals.
+- **60-79 (Wealth Builder):** Positive cash flow, saving 10-20%, sensible spending ratios.
+- **80-100 (Freedom Fighter):** High savings rate (>25%), evidence of investments, assets > liabilities.
+
+**FEEDBACK GUIDELINES:**
+- Give "Tough Love". Be direct.
+- Example: "Your score is low because you spent MWK 50k on betting. Stop feeding the machine."
 `;
 
 const RESPONSE_SCHEMA: Schema = {
@@ -42,45 +68,36 @@ const RESPONSE_SCHEMA: Schema = {
   properties: {
     markdownReport: {
       type: Type.STRING,
-      description: "The full formatted report following the strict Markdown template provided in the prompt.",
+      description: "The full formatted report following the markdown template.",
     },
-    inflow: {
-      type: Type.NUMBER,
-      description: "Total numeric value of all credits/inflows in MWK.",
-    },
-    outflow: {
-      type: Type.NUMBER,
-      description: "Total numeric value of all debits/outflows in MWK.",
-    },
+    inflow: { type: Type.NUMBER },
+    outflow: { type: Type.NUMBER },
     categories: {
       type: Type.ARRAY,
-      description: "List of spending categories for visualization.",
       items: {
         type: Type.OBJECT,
         properties: {
           name: { type: Type.STRING },
-          value: { type: Type.NUMBER, description: "Amount in MWK" },
+          value: { type: Type.NUMBER },
         },
         required: ["name", "value"],
       },
     },
     topInflows: {
       type: Type.ARRAY,
-      description: "Top 5 largest credit transactions.",
       items: {
         type: Type.OBJECT,
         properties: {
           date: { type: Type.STRING },
           description: { type: Type.STRING },
           amount: { type: Type.NUMBER },
-          category: { type: Type.STRING, description: "Guess source: Salary, Business, etc." }
+          category: { type: Type.STRING }
         },
         required: ["date", "description", "amount"]
       }
     },
     topOutflows: {
       type: Type.ARRAY,
-      description: "Top 5 largest debit transactions.",
       items: {
         type: Type.OBJECT,
         properties: {
@@ -94,36 +111,38 @@ const RESPONSE_SCHEMA: Schema = {
     },
     redFlags: {
       type: Type.ARRAY,
-      description: "List of strings describing potential issues or observations (e.g. 'Huge Amazon spending').",
       items: { type: Type.STRING }
     },
     financialWisdom: {
       type: Type.ARRAY,
-      description: "3 structured wisdom items from the specific books.",
       items: {
         type: Type.OBJECT,
         properties: {
           book: { type: Type.STRING },
           quote: { type: Type.STRING },
-          tactic: { type: Type.STRING, description: "Personalized advice based on statement." }
+          tactic: { type: Type.STRING }
         },
         required: ["book", "quote", "tactic"]
       }
     },
-    financialScore: {
-      type: Type.INTEGER,
-      description: "A gamified score from 0 to 100 based on cashflow, savings, and spending habits.",
-    },
-    financialRank: {
-      type: Type.STRING,
-      description: "A creative rank title based on the score (e.g., 'Rat Race Runner', 'Wealth Apprentice', 'Cashflow Master').",
-    },
-    scoreFeedback: {
-      type: Type.STRING,
-      description: "A 1-sentence explanation of why they got this score, citing specific habits.",
-    },
+    financialScore: { type: Type.INTEGER },
+    financialRank: { type: Type.STRING },
+    scoreFeedback: { type: Type.STRING },
+    realityCheck: {
+      type: Type.OBJECT,
+      description: "A harsh reality check converting wasteful spending into missed opportunities.",
+      properties: {
+        wasteCategory: { type: Type.STRING, description: "The category with the most unnecessary spending (e.g. 'Alcohol', 'Fast Food', 'Betting')." },
+        wasteAmount: { type: Type.NUMBER, description: "Total amount wasted in this category." },
+        opportunityCost: { type: Type.STRING, description: "What this amount could have bought in Malawi (e.g. '3 Bags of Cement', '1 Bag of Fertilizer'). Use the prices provided in instructions." },
+        itemIcon: { type: Type.STRING, enum: ['CEMENT', 'FERTILIZER', 'PETROL', 'BREAD', 'SCHOOL_SHOES'], description: "The type of item used for comparison." },
+        runwayDays: { type: Type.INTEGER, description: "Based on current closing balance and average daily spend, how many days until balance is 0? If positive cashflow, return 999." },
+        runwayMessage: { type: Type.STRING, description: "A message about their runway (e.g. 'You will run out of cash in 12 days at this rate' or 'You are safe for now')." }
+      },
+      required: ["wasteCategory", "wasteAmount", "opportunityCost", "itemIcon", "runwayDays", "runwayMessage"]
+    }
   },
-  required: ["markdownReport", "inflow", "outflow", "categories", "topInflows", "topOutflows", "redFlags", "financialWisdom", "financialScore", "financialRank", "scoreFeedback"],
+  required: ["markdownReport", "inflow", "outflow", "categories", "topInflows", "topOutflows", "redFlags", "financialWisdom", "financialScore", "financialRank", "scoreFeedback", "realityCheck"],
 };
 
 // Secondary function for Search Grounding
@@ -152,11 +171,9 @@ const fetchInvestmentInsights = async (ai: GoogleGenAI, analysis: AnalysisResult
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
-        // Note: No responseSchema/MimeType allowed with googleSearch
       },
     });
 
-    // Extract sources
     const sources: Source[] = [];
     const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     
@@ -171,7 +188,6 @@ const fetchInvestmentInsights = async (ai: GoogleGenAI, analysis: AnalysisResult
       });
     }
 
-    // Filter duplicates based on URI
     const uniqueSources = sources.filter((v, i, a) => a.findIndex(t => (t.uri === v.uri)) === i);
 
     return {
@@ -199,67 +215,26 @@ export const analyzeStatement = async (file: File): Promise<AnalysisResult> => {
   const filePart = await fileToGenerativePart(file);
 
   const prompt = `
-  Analyze the attached bank statement image/PDF.
+  Analyze the attached bank statement.
   
   Generate a response containing two parts:
-  1. A 'markdownReport' that strictly follows this format:
+  1. A 'markdownReport' summarizing Key Figures, Top Inflows/Outflows, Smart Categorization, and Recommendations.
 
-  ### Bank Statement Quick Summary – [Bank Name]
-  Account: [Account number] | Name: [Account holder name]  
-  Period: [From date] → [To date]  
-  Currency: MWK
-
-  #### Key Figures
-  - Opening balance: **MWK X**
-  - Closing balance: **MWK Y**
-  - Net change: **±MWK Z** (+/- %)
-
-  #### Total Inflows vs Outflows
-  - Total credits/incoming: **MWK X**
-  - Total debits/outgoing: **MWK Y**
-  - Net cash flow: **±MWK Z**
-
-  ### Top 5 Largest Credits (Revenue/Income)
-  1. [Date] – [Description] → **+MWK X** (e.g., Salary / Business Sales)
-
-  ### Top 5 Largest Debits (Expenses/Liabilities)
-  1. [Date] – [Description] → **−MWK X** (e.g., Car Loan / Shopping / School fees)
-
-  ### Spending Categories (This Month)
-  | Category                | Amount (MWK)      | Notes |
-  |-------------------------|-------------------|-------|
-  | [Category Name]         | [Amount]          | [Notes] |
-
-  ### Red Flags & Smart Observations
-  (Numbered list – be direct and helpful, never judgmental)
-
-  ### Quick Financial Health (1–2 sentences)
-
-  ### Recommendations (short bullet list)
-  - [Rec 1]
-  - [Rec 2]
-
-  2. Extract Structured Data:
-     - 'inflow', 'outflow', 'categories'
-     - 'topInflows': Array of largest credit transactions.
-     - 'topOutflows': Array of largest debit transactions.
-     - 'redFlags': List of potential issues.
-     - 'financialWisdom': Array of 3 objects, one for each book: "Rich Dad Poor Dad", "The Richest Man in Babylon", "The Psychology of Money". Provide a quote and a specific tactic based on this user's statement.
-     - 'financialScore': 0-100. Criteria:
-        - High savings rate (>20%) = +Points
-        - Positive cash flow = +Points
-        - Frequent gambling/betting/luxury = -Points
-        - "Rat Race" living (Income approx equals Expense) = Low Score (~40-50)
-     - 'financialRank': Give them a title based on the score.
-        - 0-40: "Consumer Trap" or "Rat Race Runner"
-        - 41-60: "Break-Even Battler"
-        - 61-80: "Smart Saver" or "Asset Builder"
-        - 81-100: "Cashflow Master" or "Financial Freedom Fighter"
-     - 'scoreFeedback': Why did they get this score? (e.g. "You spent 90% of your income on liabilities this month.")
+  2. Extract Structured Data as per the schema:
+     - 'realityCheck': CRITICAL. Look at their biggest non-essential spending category (Alcohol, Betting, Fast Food, Expensive Clothes). 
+        - Calculate how much they spent.
+        - Compare it to a REAL Malawian Asset using these approx prices:
+          - Bag of Cement = 20,000 MWK
+          - Bag of Fertilizer = 90,000 MWK
+          - School Shoes = 15,000 MWK
+          - Petrol = 2,500 MWK/Liter
+        - Example: If they spent 100,000 on 'Entertainment', opportunityCost is "5 Bags of Cement".
+     - 'financialScore': Calculate 0-100 based on the 'FINANCIAL IQ RUBRIC'.
+     - 'financialRank': Assign the correct Rank name (e.g., 'Rat Race Prisoner', 'Wealth Builder').
+     - 'scoreFeedback': A brief, punchy, actionable tip (max 2 sentences) on exactly how to improve this score next month based on their specific spending leaks.
   `;
 
   try {
-    // 1. Primary Analysis (Structured Data)
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
       contents: {
@@ -280,8 +255,7 @@ export const analyzeStatement = async (file: File): Promise<AnalysisResult> => {
 
     const result = JSON.parse(jsonText) as AnalysisResult;
 
-    // 2. Secondary Analysis (Search Grounding)
-    // We pass the result from step 1 to inform the search query
+    // Secondary Analysis (Search Grounding)
     const investmentInsights = await fetchInvestmentInsights(ai, result);
     result.investmentInsights = investmentInsights;
 

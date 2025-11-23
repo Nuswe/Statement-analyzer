@@ -1,3 +1,4 @@
+
 export interface ChartDataPoint {
   name: string;
   value: number;
@@ -28,6 +29,15 @@ export interface BookWisdom {
   tactic: string;
 }
 
+export interface RealityCheck {
+  wasteCategory: string;
+  wasteAmount: number;
+  opportunityCost: string; // e.g., "2 Bags of Cement"
+  itemIcon: 'CEMENT' | 'FERTILIZER' | 'PETROL' | 'BREAD' | 'SCHOOL_SHOES';
+  runwayDays: number; // How many days money lasts at current burn rate
+  runwayMessage: string;
+}
+
 export interface AnalysisResult {
   markdownReport: string;
   inflow: number;
@@ -41,6 +51,30 @@ export interface AnalysisResult {
   financialRank: string;
   scoreFeedback: string;
   investmentInsights?: InvestmentInsight;
+  realityCheck?: RealityCheck;
+}
+
+export interface HistoryItem {
+  id: string;
+  timestamp: number;
+  fileName: string;
+  result: AnalysisResult;
+}
+
+export type UserPlan = 'FREE' | 'PRO';
+
+export interface Subscription {
+  method: 'AIRTEL' | 'MPAMBA' | 'VISA' | 'PAYPAL';
+  status: 'ACTIVE' | 'CANCELLED' | 'PAST_DUE';
+  nextBillingDate: number;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  plan: UserPlan;
+  subscription?: Subscription;
 }
 
 export enum AppState {
